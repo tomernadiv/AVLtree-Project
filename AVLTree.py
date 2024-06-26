@@ -8,9 +8,10 @@
 A class representing a virtual node in an AVL tree
 """
 class VirtualNode(object):
-	# A virtual Node has only a parent field.
 	def __init__(self):
 		self.parent = None
+		self.height = -1
+		self.size = 0
 	
 	def is_real_node(self):
 		"""returns whether self is not a virtual node 
@@ -41,18 +42,32 @@ class AVLNode(object):
 		self.size = 0
 
 	def balance_factor(self):
+		"""
+		Returns the balance factor of a node.
+
+		@rtype: int
+		@ returns: BF(node)
+		"""
 		return self.left.height - self.right.height
 		
-
-	"""returns whether self is not a virtual node 
-
-	@rtype: bool
-	@returns: False if self is a virtual node, True otherwise.
-	"""
 	def is_real_node(self):
+		"""
+		returns whether self is not a virtual node 
+
+		@rtype: bool
+		@returns: False if self is a virtual node, True otherwise.
+		"""
 		return True
 
+	def is_criminal(self):
+		"""
+		Checks if an AVL node has a balance factor above 1 or below -1
 
+		@ rtype: Bool
+		@ returns: True if AVL criminal
+		"""
+		bf = self.balance_factor()
+		return bf > 1 or bf < -1
 """
 A class implementing an AVL tree.
 """
@@ -63,108 +78,161 @@ class AVLTree(object):
 
 	"""
 	def __init__(self):
-		self.root = None
+		self.root = VirtualNode()
 
-
-	"""searches for a node in the dictionary corresponding to the key
-
-	@type key: int
-	@param key: a key to be searched
-	@rtype: AVLNode
-	@returns: node corresponding to key
-	"""
 	def search(self, key):
-		return None
+		"""
+		searches for a node in the dictionary corresponding to the key.
+		Iterative approach for binary search.
 
+		@type key: int
+		@param key: a key to be searched
+		@rtype: AVLNode
+		@returns: node corresponding to key
+		"""
 
-	"""inserts a new node into the dictionary with corresponding key and value
+		node = self.get_root()
+		
+		while node.is_real_node():
 
-	@type key: int
-	@pre: key currently does not appear in the dictionary
-	@param key: key of item that is to be inserted to self
-	@type val: string
-	@param val: the value of the item
-	@rtype: int
-	@returns: the number of rebalancing operation due to AVL rebalancing
-	"""
+			# found key:
+			if node.key == key:
+				return node
+
+			# left turn:
+			if key < node.key:
+				node = node.left
+
+			# right turn:
+			else:
+				node = node.right
+
+		return None           
+
 	def insert(self, key, val):
-		return -1
+		"""
+		inserts a new node into the dictionary with corresponding key and value
 
+		@type key: int
+		@pre: key currently does not appear in the dictionary
+		@param key: key of item that is to be inserted to self
+		@type val: string
+		@param val: the value of the item
+		@rtype: int
+		@returns: the number of rebalancing operation due to AVL rebalancing
+		"""
+		# if the key appears in the tree:
+		node = self.search(key)
+		if node != None:
+			node.value = val   # switch the value
+			return 0
+		
+		# if we need to add the key:
+		node = self.get_root()
+		while node.is_real_node():
+			if key < node.key:      # left turn
+				node = node.left
+			else:                   # right turn
+				node = node.right
 
-	"""deletes node from the dictionary
+		# insert the new node and fix pointers:
+		new_node = AVLNode(key, val)
+		parent = node.parent
+		if parent.left == node:
+			parent.left = new_node
+		else:
+			parent.right = new_node
+		new_node.parent = parent
 
-	@type node: AVLNode
-	@pre: node is a real pointer to a node in self
-	@rtype: int
-	@returns: the number of rebalancing operation due to AVL rebalancing
-	"""
+		# update heights:
+		self.update_height(new_node)
+
+		# detect criminal:
+		node = new_node # start from the bottom
+		while node.is_real_node():
+			if node.is_criminal():
+				cnt = self.balance(node)       # perform rotations
+				self.update_height(new_node)   # update heights
+				return cnt
+		return 0
+
 	def delete(self, node):
+		"""
+		deletes node from the dictionary
+
+		@type node: AVLNode
+		@pre: node is a real pointer to a node in self
+		@rtype: int
+		@returns: the number of rebalancing operation due to AVL rebalancing
+		"""
 		return -1
 
-
-	"""returns an array representing dictionary 
-
-	@rtype: list
-	@returns: a sorted list according to key of touples (key, value) representing the data structure
-	"""
 	def avl_to_array(self):
+		"""
+		returns an array representing dictionary 
+
+		@rtype: list
+		@returns: a sorted list according to key of touples (key, value) representing the data structure
+		"""
 		return None
 
-
-	"""returns the number of items in dictionary 
-
-	@rtype: int
-	@returns: the number of items in dictionary 
-	"""
 	def size(self):
+		"""
+		returns the number of items in dictionary 
+
+		@rtype: int
+		@returns: the number of items in dictionary 
+		"""
 		return -1	
 
-
-	"""compute the rank of node in the dictionary
-
-	@type node: AVLNode
-	@pre: node is in self
-	@param node: a node in the dictionary to compute the rank for
-	@rtype: int
-	@returns: the rank of node in self
-	"""
 	def rank(self, node):
+		"""
+		compute the rank of node in the dictionary
+
+		@type node: AVLNode
+		@pre: node is in self
+		@param node: a node in the dictionary to compute the rank for
+		@rtype: int
+		@returns: the rank of node in self
+		"""
 		return -1
 
-
-	"""finds the i'th smallest item (according to keys) in the dictionary
-
-	@type i: int
-	@pre: 1 <= i <= self.size()
-	@param i: the rank to be selected in self
-	@rtype: AVLNode
-	@returns: the node of rank i in self
-	"""
 	def select(self, i):
+		"""
+		finds the i'th smallest item (according to keys) in the dictionary
+
+		@type i: int
+		@pre: 1 <= i <= self.size()
+		@param i: the rank to be selected in self
+		@rtype: AVLNode
+		@returns: the node of rank i in self
+		"""
 		return None
 
-
-	"""finds the node with the largest value in a specified range of keys
-
-	@type a: int
-	@param a: the lower end of the range
-	@type b: int
-	@param b: the upper end of the range
-	@pre: a<b
-	@rtype: AVLNode
-	@returns: the node with maximal (lexicographically) value having a<=key<=b, or None if no such keys exist
-	"""
 	def max_range(self, a, b):
+		"""
+		finds the node with the largest value in a specified range of keys
+
+		@type a: int
+		@param a: the lower end of the range
+		@type b: int
+		@param b: the upper end of the range
+		@pre: a<b
+		@rtype: AVLNode
+		@returns: the node with maximal (lexicographically) value having a<=key<=b, or None if no such keys exist
+		"""
 		return None
 
-
-	"""returns the root of the tree representing the dictionary
-
-	@rtype: AVLNode
-	@returns: the root, None if the dictionary is empty
-	"""
 	def get_root(self):
-		return None
+		"""
+		returns the root of the tree representing the dictionary
+
+		@rtype: AVLNode
+		@returns: the root, None if the dictionary is empty
+		"""
+		if not self.root.is_real_node():
+			return None
+		return self.root
 
 
 
@@ -172,10 +240,11 @@ class AVLTree(object):
 
 	def rotate_left(self, node):
 		"""
-  		Performs a left roatation.
+		Performs a left rotation.
 
-		@rtype: AVLNode.
-		@returns: None.
+		@node type: AVLnode.
+		@param node: criminal node with a BF in {-2,2} or the left son of a criminal node.
+		@rtyp3: None.
 		"""
 
 		# set meaningful names:
@@ -205,10 +274,11 @@ class AVLTree(object):
 
 	def rotate_right(self, node):
 		"""
-		Performs a right roatation.
+		Performs a right rotation.
 
-		@rtype: AVLNode.
-		@returns: None.
+		@node type: AVLnode.
+		@param node: criminal node with a BF in {-2,2} or the right son of a criminal node.
+		@rype: None.
 		"""
 		# set meaningful names:
 		A = node
@@ -237,8 +307,9 @@ class AVLTree(object):
 		"""
 		Performs a left than right rotation.
 
-		@rtype: AVLnode.
-		@returns: None.
+		@node type: AVLnode.
+		@param node: criminal node with a BF in {-2,2}.
+		@rype: None.
 		"""
 		
 		# perform left rotation on node.left:
@@ -250,8 +321,9 @@ class AVLTree(object):
 		"""
 		Performs a right than left rotation.
 
-		@rtype: AVLnode.
-		@returns: None.
+		@node type: AVLnode.
+		@param node: criminal node with a BF in {-2,2}.
+		@rype: None.
 		"""
 		# perform right rotation on node.right:
 		self.rotate_right(self, node.right)
@@ -263,10 +335,13 @@ class AVLTree(object):
 		Fixes an AVL tree after insertion of deletion.
 		Returns the number of rotations applied {1,2}
 
-		@rtype: AVLNode.
-		@input: criminal node with a BF in {-2,2}.
-		@returns: number of rotations performed {1,2}.
-		"""		
+		@type node: AVLNode.
+		@param node:criminal node with a BF in {-2,2}.
+		@rtype: int.
+		@returns: number of rotations performed {0,1,2}.
+		"""
+		counter = 0   # Assume no rotation occured
+
 		if node.balance_factor() == -2:
 			if node.right.balance_factor() == -1 or node.right.balance_factor() == 0:
 				self.rotate_left(self, node)                # left rotation
@@ -287,10 +362,11 @@ class AVLTree(object):
 
 	def update_height(self, node):
 		"""
-		Travels up the path of the new inputted node, updates the height recurssively.
+		Travels up the path of the new inputted node, updates the height iteratively.
 		
-		@rtype: AVLnode.
-		@input: the new inputted node.
+		@type node: AVLnode.
+		@param node: the new inputted node.
 		@output: None.
 		"""
-		pass
+		while node.is_real_node():
+			node.height = max(node.left.height, node.right.height) + 1 # Update the height and continue the climb
