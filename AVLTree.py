@@ -39,6 +39,8 @@ class VirtualRoot(object):
 		self.key = float('-inf')
 		self.left = VirtualLeaf()
 		self.right = VirtualLeaf()
+		self.left.parent = self
+		self.right.parent = self
 		self.size = 0
 	
 	def is_real_node(self):
@@ -112,8 +114,6 @@ class AVLTree(object):
 	"""
 	def __init__(self):
 		self.virtual_root = VirtualRoot()
-		self.root = self.virtual_root.right
-		self.root.parent = self.virtual_root
 
 	def get_root(self):
 		"""
@@ -122,9 +122,11 @@ class AVLTree(object):
 		@rtype: AVLNode
 		@returns: the root, None if the dictionary is empty
 		"""
-		if not self.root.is_real_node():
+		root = self.virtual_root.right
+		if not root.is_real_node():
 			return None
-		return self.root
+		else:
+			return root
 
 	def search(self, key):
 		"""
@@ -137,10 +139,10 @@ class AVLTree(object):
 		@returns: node corresponding to key
 		"""
 
-		node = self.root
+		node = self.virtual_root
 		
 		# if tree is not enpy:
-		while node.is_real_node():
+		while node.is_real_node() or isinstance(node, VirtualRoot):  # while it's a real node or a virtal root
 
 			# found key:
 			if node.key == key:
@@ -193,10 +195,9 @@ class AVLTree(object):
 		new_node.parent = parent
 
 		# update heights:
-		self.update_height(new_node)
+		rebalances = self.update_height(new_node)
 
         # Rebalance the tree if necessary and update heights
-		rebalances = 0
 		node = new_node
 		while node.is_real_node():
 			if node.is_criminal():
@@ -217,16 +218,50 @@ class AVLTree(object):
 		@rtype: int
 		@returns: the number of rebalancing operation due to AVL rebalancing
 		"""
-		return -1
+		rebalances = 0
 
+		# Case 1: Node has no children
+		if not node.left.is_real_node() and not node.right.is_real_node():
+			if node.parent.left == node: # check if node is a left or right son
+				node.parent.left = VirtualLeaf()
+			else:
+				node.parent.right = VirtualLeaf()
+        
+		# Case 2: Node has one child
+		elif not node.left.is_real_node() or not node.right.is_real_node():
+			child = node.left if not node.right.is_real_node() else node.right
+			if node.parent.left == node:
+				node.parent.left = child
+			else:
+				node.parent.right = child
+				child.parent = node.parent
+
+		pass
+		
 	def avl_to_array(self):
 		"""
-		returns an array representing dictionary 
+		Returns an array representing the dictionary.
 
 		@rtype: list
-		@returns: a sorted list according to key of touples (key, value) representing the data structure
+		@returns: a sorted list according to key of tuples (key, value) representing the data structure
 		"""
-		return None
+		def inorder_walk(node, result):
+			"""
+			In-order recursive function.
+			@node type: AVLnode.
+			@param node: root of the current subtree
+			@param result: list to collect keys and values
+			@rtype: None
+			"""
+			if not node.is_real_node():
+				return
+			inorder_walk(node.left, result)
+			result.append((node.key, node.value))
+			inorder_walk(node.right, result)
+
+		result = []
+		inorder_walk(self.get_root(), result)
+		return result
 
 	def size(self):
 		"""
@@ -274,7 +309,6 @@ class AVLTree(object):
 		@returns: the node with maximal (lexicographically) value having a<=key<=b, or None if no such keys exist
 		"""
 		return None
-
 
 
 ######### HELPER FUNCTIONS ##########
@@ -408,15 +442,52 @@ class AVLTree(object):
 		@type node: AVLnode.
 		@param node: the new inputted node.
 		@output: None.
+
+		@rtype: int.
+		@returns: number of height changes operations.
 		"""
+		cnt = 0
 		while node.is_real_node():
-			node.height = max(node.left.height, node.right.height) + 1 # Update the height and continue the climb
+			old_height = node.height
+			new_height = max(node.left.height, node.right.height) + 1
+			if old_height != new_height:
+				node.height = new_height # Update the height and continue the climb
+				cnt += 1
 			node = node.parent
+		return cnt
 
+	def find_min(self, node):
+		"""
+        inds the minimum node in a subtree.
 
+        @type node: AVLNode
+        @param node: the root of the subtree
+        @rtype: AVLNode
+        @returns: the node with the minimum key in the subtree (most left)
+        """
+		current = node
+		while current.left.is_real_node():
+			current = current.left
+		return current
+		
+	def successor(self, node):
+		"""
+		Returns the first node that is greater than inputted node.
 
-if __name__ == '__main__':
-    AVL = AVLTree()
-    AVL.insert(10, 'a')
-    AVL.insert(5, 'b')
-    AVL.insert(1, 'c')
+		@type node: AVLnode.
+		@param node: the node we wish to find its successor.
+		"""
+		# not a real node:
+		if not node.is_real_node():
+			return None
+		
+		# there is a right subtree:
+		if node.right.is_real_node():
+			return self.find_min(node.right)
+		
+		# there is no right subtree:
+		parent = node.parent
+		while parent.is_real_node() and node == parent.right:
+			node = parent
+			return parent.parent  # the first parent that is to the right of us (parent is his left son)
+		
