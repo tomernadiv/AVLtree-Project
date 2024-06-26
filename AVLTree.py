@@ -4,10 +4,16 @@
 #id2      - 207731381
 #name2    - Ron Ben Harosh  
 
+
+
 """
-A class representing a virtual node in an AVL tree
+Virtual Leafs and Root objects Classes:
 """
-class VirtualNode(object):
+class VirtualLeaf(object):
+	"""
+	A class representing a virtual node in an AVL tree.
+	A virtual Leaf has no children, and a constant height, size, and balance factor.
+	"""
 	def __init__(self):
 		self.parent = None
 		self.height = -1
@@ -20,12 +26,35 @@ class VirtualNode(object):
 		@returns: False.
 		"""
 		return False
-		
+	
+	def balance_factor(self):
+		return 0
+
+class VirtualRoot(object):
+	"""
+	A class representing a virtual root node in an AVL tree.
+	A virtual Root has no parent, and the rest of the tree is his right subtree.
+	"""
+	def __init__(self):
+		self.key = float('-inf')
+		self.left = VirtualLeaf()
+		self.right = VirtualLeaf()
+		self.size = 0
+	
+	def is_real_node(self):
+		"""returns whether self is not a virtual node 
+
+		@rtype: bool
+		@returns: False.
+		"""
+		return False
+
+
 """
 A class represnting a node in an AVL tree
 """
 class AVLNode(object):
-	"""Constructor, you are allowed to add more fields. 
+	"""
 	
 	@type key: int or None
 	@param key: key of your node
@@ -35,9 +64,11 @@ class AVLNode(object):
 	def __init__(self, key, value):
 		self.key = key
 		self.value = value
-		self.left = VirtualNode()
-		self.right = VirtualNode()
-		self.parent = VirtualNode()
+		self.left = VirtualLeaf()
+		self.right = VirtualLeaf()
+		self.parent = VirtualLeaf()
+		self.left.parent = self
+		self.right.parent = self
 		self.height = -1
 		self.size = 0
 
@@ -68,6 +99,8 @@ class AVLNode(object):
 		"""
 		bf = self.balance_factor()
 		return bf > 1 or bf < -1
+
+
 """
 A class implementing an AVL tree.
 """
@@ -78,7 +111,20 @@ class AVLTree(object):
 
 	"""
 	def __init__(self):
-		self.root = VirtualNode()
+		self.virtual_root = VirtualRoot()
+		self.root = self.virtual_root.right
+		self.root.parent = self.virtual_root
+
+	def get_root(self):
+		"""
+		returns the root of the tree representing the dictionary
+
+		@rtype: AVLNode
+		@returns: the root, None if the dictionary is empty
+		"""
+		if not self.root.is_real_node():
+			return None
+		return self.root
 
 	def search(self, key):
 		"""
@@ -91,8 +137,9 @@ class AVLTree(object):
 		@returns: node corresponding to key
 		"""
 
-		node = self.get_root()
+		node = self.root
 		
+		# if tree is not enpy:
 		while node.is_real_node():
 
 			# found key:
@@ -107,7 +154,7 @@ class AVLTree(object):
 			else:
 				node = node.right
 
-		return None           
+		return None  # the tree is empty, the root is a virtual leaf node.      
 
 	def insert(self, key, val):
 		"""
@@ -128,8 +175,9 @@ class AVLTree(object):
 			return 0
 		
 		# if we need to add the key:
-		node = self.get_root()
-		while node.is_real_node():
+		node = self.virtual_root
+
+		while node.is_real_node() or isinstance(node, VirtualRoot):   # keep going if it's a virtual root or a real node
 			if key < node.key:      # left turn
 				node = node.left
 			else:                   # right turn
@@ -147,15 +195,19 @@ class AVLTree(object):
 		# update heights:
 		self.update_height(new_node)
 
-		# detect criminal:
-		node = new_node # start from the bottom
+        # Rebalance the tree if necessary and update heights
+		rebalances = 0
+		node = new_node
 		while node.is_real_node():
 			if node.is_criminal():
-				cnt = self.balance(node)       # perform rotations
-				self.update_height(new_node)   # update heights
-				return cnt
-		return 0
-
+				rebalances += self.balance(node)       # perform rotations
+				self.update_height(new_node)           # update heights
+				return rebalances
+			
+			node = node.parent                         # continue
+		
+		return rebalances
+	
 	def delete(self, node):
 		"""
 		deletes node from the dictionary
@@ -222,17 +274,6 @@ class AVLTree(object):
 		@returns: the node with maximal (lexicographically) value having a<=key<=b, or None if no such keys exist
 		"""
 		return None
-
-	def get_root(self):
-		"""
-		returns the root of the tree representing the dictionary
-
-		@rtype: AVLNode
-		@returns: the root, None if the dictionary is empty
-		"""
-		if not self.root.is_real_node():
-			return None
-		return self.root
 
 
 
@@ -313,9 +354,9 @@ class AVLTree(object):
 		"""
 		
 		# perform left rotation on node.left:
-		self.rotate_left(self, node.left)
+		self.rotate_left(node.left)
 		# perform right rotation on node:
-		self.rotate_right(self, node)
+		self.rotate_right(node)
 
 	def rotate_right_left(self, node):
 		"""
@@ -326,9 +367,9 @@ class AVLTree(object):
 		@rype: None.
 		"""
 		# perform right rotation on node.right:
-		self.rotate_right(self, node.right)
+		self.rotate_right(node.right)
 		# perform left rotation on node:
-		self.rotate_left(self, node)
+		self.rotate_left(node)
 
 	def balance(self, node):
 		"""
@@ -344,18 +385,18 @@ class AVLTree(object):
 
 		if node.balance_factor() == -2:
 			if node.right.balance_factor() == -1 or node.right.balance_factor() == 0:
-				self.rotate_left(self, node)                # left rotation
+				self.rotate_left(node)                # left rotation
 				counter = 1
 			elif node.right.balance_factor() == 1:
-				self.rotate_right_left(self, node)          # right left rotation
+				self.rotate_right_left(node)          # right left rotation
 				counter = 2
 
 		if node.balance_factor() == 2:
 			if node.left.balance_factor() == 1 or node.left.balance_factor() == 0:
-				self.rotate_right(self, node)               # right rotation
+				self.rotate_right(node)               # right rotation
 				counter = 1
 			if node.left.balance_factor() == -1:
-				self.rotate_left_right(self, node)          # left right rotation
+				self.rotate_left_right(node)          # left right rotation
 				counter = 2
 
 		return counter
@@ -370,3 +411,12 @@ class AVLTree(object):
 		"""
 		while node.is_real_node():
 			node.height = max(node.left.height, node.right.height) + 1 # Update the height and continue the climb
+			node = node.parent
+
+
+
+if __name__ == '__main__':
+    AVL = AVLTree()
+    AVL.insert(10, 'a')
+    AVL.insert(5, 'b')
+    AVL.insert(1, 'c')
