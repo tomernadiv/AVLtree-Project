@@ -12,12 +12,12 @@ class VirtualNode(object):
 	def __init__(self):
 		self.parent = None
 	
-	"""returns whether self is not a virtual node 
-
-	@rtype: bool
-	@returns: False.
-	"""
 	def is_real_node(self):
+		"""returns whether self is not a virtual node 
+
+		@rtype: bool
+		@returns: False.
+		"""
 		return False
 		
 """
@@ -36,7 +36,7 @@ class AVLNode(object):
 		self.value = value
 		self.left = VirtualNode()
 		self.right = VirtualNode()
-		self.parent = None
+		self.parent = VirtualNode()
 		self.height = -1
 		self.size = 0
 
@@ -51,7 +51,6 @@ class AVLNode(object):
 	"""
 	def is_real_node(self):
 		return True
-
 
 
 """
@@ -169,18 +168,21 @@ class AVLTree(object):
 
 
 
-######### CUSTOM OPERATIONS ##########
+######### HELPER FUNCTIONS ##########
 
-	"""
-  Performs a left roatation.
-
-	@rtype: AVLNode.
-	@returns: None.
-	"""
 	def rotate_left(self, node):
+		"""
+  		Performs a left roatation.
+
+		@rtype: AVLNode.
+		@returns: None.
+		"""
+
 		# set meaningful names:
 		A = node
 		B = node.right
+
+		### Poiners ###
 
 		# apply poninters for A.parent <-> B:
 		if A.parent.left == A:
@@ -197,13 +199,17 @@ class AVLTree(object):
 		B.left = A
 		A.parent = B
 
-	"""
-  Performs a right roatation.
+		### Height ###
+		A.height = max(A.left.height, A.right.height) + 1
+		B.height = max(B.left.height, B.right.height) + 1
 
-	@rtype: AVLNode.
-	@returns: None.
-	"""
 	def rotate_right(self, node):
+		"""
+		Performs a right roatation.
+
+		@rtype: AVLNode.
+		@returns: None.
+		"""
 		# set meaningful names:
 		A = node
 		B = node.left
@@ -223,31 +229,44 @@ class AVLTree(object):
 		B.right = A
 		A.parent = B
 
+		### Height ###
+		A.height = max(A.left.height, A.right.height) + 1
+		B.height = max(B.left.height, B.right.height) + 1
+
 	def rotate_left_right(self, node):
+		"""
+		Performs a left than right rotation.
+
+		@rtype: AVLnode.
+		@returns: None.
+		"""
+		
 		# perform left rotation on node.left:
 		self.rotate_left(self, node.left)
 		# perform right rotation on node:
 		self.rotate_right(self, node)
 
 	def rotate_right_left(self, node):
+		"""
+		Performs a right than left rotation.
+
+		@rtype: AVLnode.
+		@returns: None.
+		"""
 		# perform right rotation on node.right:
 		self.rotate_right(self, node.right)
 		# perform left rotation on node:
 		self.rotate_left(self, node)
 
-
-
-	"""
-  Fixes an AVL tree after insertion of deletion.
-
-	@rtype: AVLNode.
-  @input: criminal node with a BF in {-2,2}.
-	@returns: number of rotations performed {1,2}.
-	"""
 	def balance(self, node):
-		# dont forget to modify the counter, return counter!
-		
-		### Check which type of rotation to do ###
+		"""
+		Fixes an AVL tree after insertion of deletion.
+		Returns the number of rotations applied {1,2}
+
+		@rtype: AVLNode.
+		@input: criminal node with a BF in {-2,2}.
+		@returns: number of rotations performed {1,2}.
+		"""		
 		if node.balance_factor() == -2:
 			if node.right.balance_factor() == -1 or node.right.balance_factor() == 0:
 				self.rotate_left(self, node)                # left rotation
@@ -265,3 +284,13 @@ class AVLTree(object):
 				counter = 2
 
 		return counter
+
+	def update_height(self, node):
+		"""
+		Travels up the path of the new inputted node, updates the height recurssively.
+		
+		@rtype: AVLnode.
+		@input: the new inputted node.
+		@output: None.
+		"""
+		pass
