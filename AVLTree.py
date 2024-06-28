@@ -19,6 +19,9 @@ class VirtualLeaf(object):
 		self.height = -1
 		self.size = 0
 	
+	def __repr__(self):
+		return '-Virtual Leaf-'
+	
 	def is_real_node(self):
 		"""returns whether self is not a virtual node 
 
@@ -42,6 +45,9 @@ class VirtualRoot(object):
 		self.right.parent = self
 		self.left.parent = self
 		self.size = 0
+
+	def __repr__(self):
+		return '-Virtual Root-'
 	
 	def is_real_node(self):
 		"""returns whether self is not a virtual node 
@@ -73,6 +79,9 @@ class AVLNode(object):
 		self.right.parent = self
 		self.height = -1
 		self.size = 0
+
+	def __repr__(self):
+		return '-AVL NODE-\n key: %s\n value: %s' % (self.key, self.value)
 
 	def balance_factor(self):
 		"""
@@ -247,7 +256,6 @@ class AVLTree(object):
 		avl_to_array_rec(self.virtual_root.right, array)
 		return array
 		 
-
 	def size(self):
 		"""
 		returns the number of items in dictionary 
@@ -440,8 +448,61 @@ class AVLTree(object):
 			node = node.parent
 		return cnt
 
+	def successor(self, node):
+		"""
+		Return the successor node of a certain node.
 
+		@ type node: AVLnode
+		@param node: current node.
+		"""
+		pass
 
+	def minimum(self, node=None):
+		"""
+		Return the minimum of a subtree. 
+		If node is None -> Return the minumum of the whole tree.
+
+		@type node: AVLnode or None.
+		@param node: root of a subtree. if None, node -> real root.
+		@rtype: AVLnode.
+		@return: minumum node in the tree.
+		"""
+		# no subtree root specified:
+		if node==None:
+			node = self.virtual_root.right
+		
+		# tree is empty:
+		if not node.is_real_node():
+			return None
+		
+		# find minumum:
+		while node.is_real_node(): # iterate until a virtual leaf node is encountered
+			node = node.left
+		return node.parent         # return the virtual leaf node parent
+
+	def maximum(self, node=None):
+		"""
+		Return the maximum of a subtree. 
+		If node is None -> Return the maximum of the whole tree.
+
+		@type node: AVLnode or None.
+		@param node: root of a subtree. if None, node -> real root.
+		@rtype: AVLnode.
+		@return: maximum node in the tree.
+		"""
+		# no subtree root specified:
+		if node==None:
+			node = self.virtual_root.right
+		
+		# tree is empty:
+		if not node.is_real_node():
+			return None
+		
+		# find minumum:
+		while node.is_real_node(): # iterate until a virtual leaf node is encountered
+			node = node.right
+		return node.parent         # return the virtual leaf node parent
+	
 if __name__ == '__main__':
     AVL = AVLTree()
     AVL.insert(10, 'a')
