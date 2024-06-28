@@ -124,7 +124,6 @@ class AVLTree(object):
 	def __init__(self):
 		self.virtual_root = VirtualRoot()
 
-
 	def get_root(self):
 		"""
 		returns the root of the tree representing the dictionary
@@ -203,7 +202,7 @@ class AVLTree(object):
 		new_node.parent = parent
 
 		# update heights:
-		rebalances = self.update_height(new_node)
+		rebalances = self.update_height(new_node)     # NOTICE!
 
         # Rebalance the tree if necessary and update heights
 		node = new_node
@@ -226,7 +225,44 @@ class AVLTree(object):
 		@rtype: int
 		@returns: the number of rebalancing operation due to AVL rebalancing
 		"""
-		return -1
+		# Case 1: node has less than 2 children:
+		if not node.left.is_real_node() or not node.right.is_real_node():
+			# find the child node
+			if not node.left.is_real_node():
+				child = node.right
+			else:
+				child = node.left
+			
+			# handle pointers:
+			if node == node.parent.left:    # node is a left child
+				node.parent.left = child
+			else:                           # node is a right child
+				node.parent.right = child
+			child.parent = node.parent      # upward pointer
+			start_node = child              # just for interpertable naming
+
+		# Case 2: node has exactly 2 children:
+		else:
+			successor = self.successor(node)
+			node.key, node.value = successor.key, successor.value  # replace node inplace
+			return self.delete(successor)                          # delete successor -> will go to Case 1
+		
+
+		# start climbing:
+		start_node = start_node.parent if isinstance(start_node, ValueError) else start_node
+
+		# balance tree upward:
+		rebalances = 0                                        # initialize counter
+		while start_node.is_real_node():
+			old_height = start_node.height                    # save old height to decide if keep climbing
+			if start_node.is_criminal():
+				rebalances += self.balance(start_node)        # count the number of rotations.
+			rebalances += self.update_height(start_node)      # count the number of height changes.
+			if start_node.height == old_height:
+				break
+			start_node = start_node.parent
+
+		return rebalances	
 
 	def avl_to_array(self):
 		"""
@@ -452,8 +488,10 @@ class AVLTree(object):
 		"""
 		Return the successor node of a certain node.
 
-		@ type node: AVLnode
+		@type node: AVLnode.
 		@param node: current node.
+		@rtype: AVLnode.
+		@returns: successor of the current node.
 		"""
 		# Case 0: no successor (node is maximum)
 		if self.maximum() == node:
@@ -514,8 +552,3 @@ class AVLTree(object):
 			node = node.right
 		return node.parent         # return the virtual leaf node parent
 	
-if __name__ == '__main__':
-    AVL = AVLTree()
-    AVL.insert(10, 'a')
-    AVL.insert(5, 'b')
-    AVL.insert(1, 'c')
