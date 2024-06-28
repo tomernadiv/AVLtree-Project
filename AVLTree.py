@@ -455,7 +455,18 @@ class AVLTree(object):
 		@ type node: AVLnode
 		@param node: current node.
 		"""
-		pass
+		# Case 0: no successor (node is maximum)
+		if self.maximum() == node:
+			return None
+		
+		# Case 1: node as a right son.
+		if node.right.is_real_node():
+			return self.minimum(node.right)
+		
+		# Case 2: node does not have a right son.
+		while node.parent.right == node:  # climb up until you are no longer a right son.
+			node = node.parent
+		return node.parent
 
 	def minimum(self, node=None):
 		"""

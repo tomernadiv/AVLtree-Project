@@ -1,6 +1,7 @@
 
 ## Written by Amitai Cohen 
-## adjustment for AVL Trees by Eviatar, Yaron, and ChatGPT
+## adjustment for AVL Trees by Eviatar, Yaron, and ChatGPT.
+## Further modified for VirtualRoot by Tomer Nadiv.
 
 from AVLTree import *
 
