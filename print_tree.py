@@ -8,7 +8,7 @@ def printree(t, bykey=True):
     """Print a textual representation of t
     bykey=True: show keys instead of values"""
     # Print the textual representation returned by trepr
-    for row in trepr(t.root, bykey):
+    for row in trepr(t.get_root(), bykey):
         print(row)
 
 def trepr(t, bykey=False):

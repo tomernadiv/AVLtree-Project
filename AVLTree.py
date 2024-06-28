@@ -39,6 +39,8 @@ class VirtualRoot(object):
 		self.key = float('-inf')
 		self.left = VirtualLeaf()
 		self.right = VirtualLeaf()
+		self.right.parent = self
+		self.left.parent = self
 		self.size = 0
 	
 	def is_real_node(self):
@@ -112,8 +114,7 @@ class AVLTree(object):
 	"""
 	def __init__(self):
 		self.virtual_root = VirtualRoot()
-		self.root = self.virtual_root.right
-		self.root.parent = self.virtual_root
+
 
 	def get_root(self):
 		"""
@@ -122,9 +123,9 @@ class AVLTree(object):
 		@rtype: AVLNode
 		@returns: the root, None if the dictionary is empty
 		"""
-		if not self.root.is_real_node():
+		if not self.virtual_root.right.is_real_node():
 			return None
-		return self.root
+		return self.virtual_root.right
 
 	def search(self, key):
 		"""
@@ -137,10 +138,10 @@ class AVLTree(object):
 		@returns: node corresponding to key
 		"""
 
-		node = self.root
+		node = self.virtual_root
 		
 		# if tree is not enpy:
-		while node.is_real_node():
+		while node.is_real_node() or isinstance(node, VirtualRoot):
 
 			# found key:
 			if node.key == key:
@@ -193,10 +194,9 @@ class AVLTree(object):
 		new_node.parent = parent
 
 		# update heights:
-		self.update_height(new_node)
+		rebalances = self.update_height(new_node)
 
         # Rebalance the tree if necessary and update heights
-		rebalances = 0
 		node = new_node
 		while node.is_real_node():
 			if node.is_criminal():
@@ -285,7 +285,7 @@ class AVLTree(object):
 
 		@node type: AVLnode.
 		@param node: criminal node with a BF in {-2,2} or the left son of a criminal node.
-		@rtyp3: None.
+		@rtype: None.
 		"""
 
 		# set meaningful names:
@@ -407,11 +407,18 @@ class AVLTree(object):
 		
 		@type node: AVLnode.
 		@param node: the new inputted node.
-		@output: None.
+		@rtype: int.
+		@returns: the number of height changes occured.
 		"""
+		cnt = 0
 		while node.is_real_node():
-			node.height = max(node.left.height, node.right.height) + 1 # Update the height and continue the climb
+			old_height = node.height
+			new_height = max(node.left.height, node.right.height) + 1 # Update the height and continue the climb
+			if old_height != new_height:
+				node.height = new_height
+				cnt += 1                  # count the number of height changes.
 			node = node.parent
+		return cnt
 
 
 
