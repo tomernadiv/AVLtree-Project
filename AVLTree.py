@@ -226,7 +226,27 @@ class AVLTree(object):
 		@rtype: list
 		@returns: a sorted list according to key of touples (key, value) representing the data structure
 		"""
-		return None
+		def avl_to_array_rec(node, array):
+			"""
+			Recurssive in-order walk.
+
+			@type node: AVLnode.
+			@param node: real root of the tree.
+			@type array: python list.
+			@param array: current version of dictionary as a sorted array.
+			@rtype: python list.
+			@returns: sorted dictionary ADT as a sorted array.
+			"""
+			if isinstance(node, VirtualLeaf):
+				return
+			avl_to_array_rec(node.left, array)
+			array.append((node.key, node.value))
+			avl_to_array_rec(node.right, array)
+
+		array = []
+		avl_to_array_rec(self.virtual_root.right, array)
+		return array
+		 
 
 	def size(self):
 		"""
