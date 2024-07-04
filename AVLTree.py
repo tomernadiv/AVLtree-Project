@@ -201,19 +201,31 @@ class AVLTree(object):
 			parent.right = new_node
 		new_node.parent = parent
 
-		# update heights:
-		rebalances = self.update_height(new_node)     # NOTICE!
 
-        # Rebalance the tree if necessary and update heights
-		node = new_node
-		while node.is_real_node():
-			if node.is_criminal():
-				rebalances += self.balance(node)       # perform rotations
-				self.update_height(new_node)           # update heights
-				return rebalances
-			
-			node = node.parent                         # continue
-		
+        # Travel up, for each node change the height and check if it's criminal.
+		# Count height change as +1, rotations as +1 or +2.
+		# If the hight didn't change, and current node is not a criminal - terminate.
+
+		rebalances = 0 							   # initialize counter
+		curr_node = new_node.parent 			   # start from the new node
+		while curr_node.is_real_node():            # continue until the virtual root is reached (or encounter break command)
+
+			# Update height:
+			old_height = curr_node.height          # save old height
+			new_height = max(curr_node.left.height, curr_node.right.height) + 1  # update height
+			curr_node.height = new_height		   # update height
+
+			# Decide the next move:
+			if curr_node.is_criminal():            # [OBS 1]
+				rebalances += self.balance(curr_node)
+				break
+			else: 
+				if new_height == old_height:       # [OBS 3]
+					break                          # terminate if height didn't change and node is not criminal
+				else:                              # [OBS 2]
+					rebalances += 1				   # count the number of height changes
+					curr_node = curr_node.parent   # continue		
+
 		return rebalances
 	
 	def delete(self, node):
@@ -444,25 +456,22 @@ class AVLTree(object):
 		@rtype: int.
 		@returns: number of rotations performed {0,1,2}.
 		"""
-		counter = 0   # Assume no rotation occured
-
 		if node.balance_factor() == -2:
 			if node.right.balance_factor() == -1 or node.right.balance_factor() == 0:
 				self.rotate_left(node)                # left rotation
-				counter = 1
+				return 1                              # Number of rotations performed is 1
 			elif node.right.balance_factor() == 1:
 				self.rotate_right_left(node)          # right left rotation
-				counter = 2
+				return 2                              # Number of rotations performed is 2
 
 		if node.balance_factor() == 2:
 			if node.left.balance_factor() == 1 or node.left.balance_factor() == 0:
 				self.rotate_right(node)               # right rotation
-				counter = 1
+				return 1                              # Number of rotations performed is 1
 			if node.left.balance_factor() == -1:
 				self.rotate_left_right(node)          # left right rotation
-				counter = 2
-
-		return counter
+				return 2                              # Number of rotations performed is 2
+		return 0
 
 	def update_height(self, node):
 		"""
