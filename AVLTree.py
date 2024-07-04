@@ -19,6 +19,9 @@ class VirtualLeaf(object):
 		self.height = -1
 		self.size = 0
 	
+	def __repr__(self):
+		return '-Virtual Leaf-'
+	
 	def is_real_node(self):
 		"""returns whether self is not a virtual node 
 
@@ -39,9 +42,12 @@ class VirtualRoot(object):
 		self.key = float('-inf')
 		self.left = VirtualLeaf()
 		self.right = VirtualLeaf()
-		self.left.parent = self
 		self.right.parent = self
+		self.left.parent = self
 		self.size = 0
+
+	def __repr__(self):
+		return '-Virtual Root-'
 	
 	def is_real_node(self):
 		"""returns whether self is not a virtual node 
@@ -73,6 +79,9 @@ class AVLNode(object):
 		self.right.parent = self
 		self.height = -1
 		self.size = 0
+
+	def __repr__(self):
+		return '-AVL NODE-\n key: %s\n value: %s' % (self.key, self.value)
 
 	def balance_factor(self):
 		"""
@@ -122,11 +131,9 @@ class AVLTree(object):
 		@rtype: AVLNode
 		@returns: the root, None if the dictionary is empty
 		"""
-		root = self.virtual_root.right
-		if not root.is_real_node():
+		if not self.virtual_root.right.is_real_node():
 			return None
-		else:
-			return root
+		return self.virtual_root.right
 
 	def search(self, key):
 		"""
@@ -142,7 +149,7 @@ class AVLTree(object):
 		node = self.virtual_root
 		
 		# if tree is not enpy:
-		while node.is_real_node() or isinstance(node, VirtualRoot):  # while it's a real node or a virtal root
+		while node.is_real_node() or isinstance(node, VirtualRoot):
 
 			# found key:
 			if node.key == key:
@@ -195,7 +202,7 @@ class AVLTree(object):
 		new_node.parent = parent
 
 		# update heights:
-		rebalances = self.update_height(new_node)
+		rebalances = self.update_height(new_node)     # NOTICE!
 
         # Rebalance the tree if necessary and update heights
 		node = new_node
@@ -218,26 +225,45 @@ class AVLTree(object):
 		@rtype: int
 		@returns: the number of rebalancing operation due to AVL rebalancing
 		"""
-		rebalances = 0
-
-		# Case 1: Node has no children
-		if not node.left.is_real_node() and not node.right.is_real_node():
-			if node.parent.left == node: # check if node is a left or right son
-				node.parent.left = VirtualLeaf()
+		# Case 1: node has less than 2 children:
+		if not node.left.is_real_node() or not node.right.is_real_node():
+			# find the child node
+			if not node.left.is_real_node():
+				child = node.right
 			else:
-				node.parent.right = VirtualLeaf()
-        
-		# Case 2: Node has one child
-		elif not node.left.is_real_node() or not node.right.is_real_node():
-			child = node.left if not node.right.is_real_node() else node.right
-			if node.parent.left == node:
+				child = node.left
+			
+			# handle pointers:
+			if node == node.parent.left:    # node is a left child
 				node.parent.left = child
-			else:
+			else:                           # node is a right child
 				node.parent.right = child
-				child.parent = node.parent
+			child.parent = node.parent      # upward pointer
+			start_node = child              # just for interpertable naming
 
-		pass
+		# Case 2: node has exactly 2 children:
+		else:
+			successor = self.successor(node)
+			node.key, node.value = successor.key, successor.value  # replace node inplace
+			return self.delete(successor)                          # delete successor -> will go to Case 1
 		
+
+		# start climbing:
+		start_node = start_node.parent if isinstance(start_node, ValueError) else start_node
+
+		# balance tree upward:
+		rebalances = 0                                        # initialize counter
+		while start_node.is_real_node():
+			old_height = start_node.height                    # save old height to decide if keep climbing
+			if start_node.is_criminal():
+				rebalances += self.balance(start_node)        # count the number of rotations.
+			rebalances += self.update_height(start_node)      # count the number of height changes.
+			if start_node.height == old_height:
+				break
+			start_node = start_node.parent
+
+		return rebalances	
+
 	def avl_to_array(self):
 		"""
 		Returns an array representing the dictionary.
@@ -245,24 +271,27 @@ class AVLTree(object):
 		@rtype: list
 		@returns: a sorted list according to key of tuples (key, value) representing the data structure
 		"""
-		def inorder_walk(node, result):
+		def avl_to_array_rec(node, array):
 			"""
-			In-order recursive function.
-			@node type: AVLnode.
-			@param node: root of the current subtree
-			@param result: list to collect keys and values
-			@rtype: None
+			Recurssive in-order walk.
+
+			@type node: AVLnode.
+			@param node: real root of the tree.
+			@type array: python list.
+			@param array: current version of dictionary as a sorted array.
+			@rtype: python list.
+			@returns: sorted dictionary ADT as a sorted array.
 			"""
-			if not node.is_real_node():
+			if isinstance(node, VirtualLeaf):
 				return
-			inorder_walk(node.left, result)
-			result.append((node.key, node.value))
-			inorder_walk(node.right, result)
+			avl_to_array_rec(node.left, array)
+			array.append((node.key, node.value))
+			avl_to_array_rec(node.right, array)
 
-		result = []
-		inorder_walk(self.get_root(), result)
-		return result
-
+		array = []
+		avl_to_array_rec(self.virtual_root.right, array)
+		return array
+		 
 	def size(self):
 		"""
 		returns the number of items in dictionary 
@@ -319,7 +348,7 @@ class AVLTree(object):
 
 		@node type: AVLnode.
 		@param node: criminal node with a BF in {-2,2} or the left son of a criminal node.
-		@rtyp3: None.
+		@rtype: None.
 		"""
 
 		# set meaningful names:
@@ -441,53 +470,84 @@ class AVLTree(object):
 		
 		@type node: AVLnode.
 		@param node: the new inputted node.
-		@output: None.
-
 		@rtype: int.
-		@returns: number of height changes operations.
+		@returns: the number of height changes occured.
 		"""
 		cnt = 0
 		while node.is_real_node():
 			old_height = node.height
-			new_height = max(node.left.height, node.right.height) + 1
+			new_height = max(node.left.height, node.right.height) + 1 # Update the height and continue the climb
 			if old_height != new_height:
-				node.height = new_height # Update the height and continue the climb
-				cnt += 1
+				node.height = new_height
+				cnt += 1                  # count the number of height changes.
 			node = node.parent
 		return cnt
 
-	def find_min(self, node):
-		"""
-        inds the minimum node in a subtree.
-
-        @type node: AVLNode
-        @param node: the root of the subtree
-        @rtype: AVLNode
-        @returns: the node with the minimum key in the subtree (most left)
-        """
-		current = node
-		while current.left.is_real_node():
-			current = current.left
-		return current
-		
 	def successor(self, node):
 		"""
-		Returns the first node that is greater than inputted node.
+		Return the successor node of a certain node.
 
 		@type node: AVLnode.
-		@param node: the node we wish to find its successor.
+		@param node: current node.
+		@rtype: AVLnode.
+		@returns: successor of the current node.
 		"""
-		# not a real node:
+		# Case 0: no successor (node is maximum)
+		if self.maximum() == node:
+			return None
+		
+		# Case 1: node as a right son.
+		if node.right.is_real_node():
+			return self.minimum(node.right)
+		
+		# Case 2: node does not have a right son.
+		while node.parent.right == node:  # climb up until you are no longer a right son.
+			node = node.parent
+		return node.parent
+
+	def minimum(self, node=None):
+		"""
+		Return the minimum of a subtree. 
+		If node is None -> Return the minumum of the whole tree.
+
+		@type node: AVLnode or None.
+		@param node: root of a subtree. if None, node -> real root.
+		@rtype: AVLnode.
+		@return: minumum node in the tree.
+		"""
+		# no subtree root specified:
+		if node==None:
+			node = self.virtual_root.right
+		
+		# tree is empty:
 		if not node.is_real_node():
 			return None
 		
-		# there is a right subtree:
-		if node.right.is_real_node():
-			return self.find_min(node.right)
+		# find minumum:
+		while node.is_real_node(): # iterate until a virtual leaf node is encountered
+			node = node.left
+		return node.parent         # return the virtual leaf node parent
+
+	def maximum(self, node=None):
+		"""
+		Return the maximum of a subtree. 
+		If node is None -> Return the maximum of the whole tree.
+
+		@type node: AVLnode or None.
+		@param node: root of a subtree. if None, node -> real root.
+		@rtype: AVLnode.
+		@return: maximum node in the tree.
+		"""
+		# no subtree root specified:
+		if node==None:
+			node = self.virtual_root.right
 		
-		# there is no right subtree:
-		parent = node.parent
-		while parent.is_real_node() and node == parent.right:
-			node = parent
-			return parent.parent  # the first parent that is to the right of us (parent is his left son)
+		# tree is empty:
+		if not node.is_real_node():
+			return None
 		
+		# find minumum:
+		while node.is_real_node(): # iterate until a virtual leaf node is encountered
+			node = node.right
+		return node.parent         # return the virtual leaf node parent
+	
