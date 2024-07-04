@@ -260,19 +260,30 @@ class AVLTree(object):
 			return self.delete(successor)                          # delete successor -> will go to Case 1
 		
 
-		# start climbing:
-		start_node = start_node.parent if isinstance(start_node, ValueError) else start_node
+        # Travel up, for each node change the height and check if it's criminal.
+		# Count height change as +1, rotations as +1 or +2.
+		# If the hight didn't change, and current node is not a criminal - terminate.
 
-		# balance tree upward:
-		rebalances = 0                                        # initialize counter
-		while start_node.is_real_node():
-			old_height = start_node.height                    # save old height to decide if keep climbing
-			if start_node.is_criminal():
-				rebalances += self.balance(start_node)        # count the number of rotations.
-			rebalances += self.update_height(start_node)      # count the number of height changes.
-			if start_node.height == old_height:
-				break
-			start_node = start_node.parent
+		rebalances = 0 							   # initialize counter
+		curr_node = node.parent 			       # start from the new node
+		while curr_node.is_real_node():            # continue until the virtual root is reached (or encounter break command)
+			
+			next_node = curr_node.parent           # save the next node before changing it
+			# Update height:
+			old_height = curr_node.height          # save old height
+			new_height = max(curr_node.left.height, curr_node.right.height) + 1  # update height
+			curr_node.height = new_height		   # update height
+
+			# Decide the next move:
+			if curr_node.is_criminal():            # [Step 3.4 in the lecture notes]
+				rebalances += self.balance(curr_node)
+				curr_node = next_node              # continue to the next node, notice the difference from insert
+			else: 
+				if new_height == old_height:       # [Step 3.2 in the lecture notes]
+					break                          # terminate if height didn't change and node is not criminal
+				else:                              # [Step 3.3 in the lecture notes]
+					rebalances += 1				   # count the number of height changes
+					curr_node = next_node  # continue		
 
 		return rebalances	
 
