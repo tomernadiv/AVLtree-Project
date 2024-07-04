@@ -77,7 +77,7 @@ class AVLNode(object):
 		self.parent = VirtualLeaf()
 		self.left.parent = self
 		self.right.parent = self
-		self.height = -1
+		self.height = 0
 		self.size = 0
 
 	def __repr__(self):
