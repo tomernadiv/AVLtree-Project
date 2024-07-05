@@ -44,7 +44,6 @@ class VirtualRoot(object):
 		self.right = VirtualLeaf()
 		self.right.parent = self
 		self.left.parent = self
-		self.size = 0
 
 	def __repr__(self):
 		return '-Virtual Root-'
@@ -78,7 +77,7 @@ class AVLNode(object):
 		self.left.parent = self
 		self.right.parent = self
 		self.height = 0
-		self.size = 0
+		self.size = 1
 
 	def __repr__(self):
 		return '-AVL NODE-\n key: %s\n value: %s' % (self.key, self.value)
@@ -209,6 +208,7 @@ class AVLTree(object):
 		rebalances = 0 							   # initialize counter
 		curr_node = new_node.parent 			   # start from the new node
 		while curr_node.is_real_node():            # continue until the virtual root is reached (or encounter break command)
+			curr_node.size += 1                    # update size
 
 			# Update height:
 			old_height = curr_node.height          # save old height
@@ -218,13 +218,10 @@ class AVLTree(object):
 			# Decide the next move:
 			if curr_node.is_criminal():            # [OBS 1]
 				rebalances += self.balance(curr_node)
-				break
 			else: 
-				if new_height == old_height:       # [OBS 3]
-					break                          # terminate if height didn't change and node is not criminal
-				else:                              # [OBS 2]
+				if new_height != old_height:       # [OBS 3]
 					rebalances += 1				   # count the number of height changes
-					curr_node = curr_node.parent   # continue		
+			curr_node = curr_node.parent		   # continue to the next node		
 
 		return rebalances
 	
@@ -251,7 +248,7 @@ class AVLTree(object):
 			else:                           # node is a right child
 				node.parent.right = child
 			child.parent = node.parent      # upward pointer
-			start_node = child              # just for interpertable naming
+			start_node = child.parent       # just for interpertable naming
 
 		# Case 2: node has exactly 2 children:
 		else:
@@ -265,10 +262,14 @@ class AVLTree(object):
 		# If the hight didn't change, and current node is not a criminal - terminate.
 
 		rebalances = 0 							   # initialize counter
-		curr_node = node.parent 			       # start from the new node
-		while curr_node.is_real_node():            # continue until the virtual root is reached (or encounter break command)
-			
+		curr_node = start_node 			          
+		while curr_node.is_real_node():			   # continue until the virtual root is reached        
+			print(curr_node)
 			next_node = curr_node.parent           # save the next node before changing it
+			
+			# Update size:
+			curr_node.size -= 1                   
+			
 			# Update height:
 			old_height = curr_node.height          # save old height
 			new_height = max(curr_node.left.height, curr_node.right.height) + 1  # update height
@@ -277,13 +278,10 @@ class AVLTree(object):
 			# Decide the next move:
 			if curr_node.is_criminal():            # [Step 3.4 in the lecture notes]
 				rebalances += self.balance(curr_node)
-				curr_node = next_node              # continue to the next node, notice the difference from insert
 			else: 
-				if new_height == old_height:       # [Step 3.2 in the lecture notes]
-					break                          # terminate if height didn't change and node is not criminal
-				else:                              # [Step 3.3 in the lecture notes]
+				if new_height != old_height:       # [Step 3.3 in the lecture notes]
 					rebalances += 1				   # count the number of height changes
-					curr_node = next_node  # continue		
+			curr_node = next_node                  # continue		
 
 		return rebalances	
 
@@ -322,7 +320,7 @@ class AVLTree(object):
 		@rtype: int
 		@returns: the number of items in dictionary 
 		"""
-		return -1	
+		return self.get_root().size	
 
 	def rank(self, node):
 		"""
@@ -334,7 +332,12 @@ class AVLTree(object):
 		@rtype: int
 		@returns: the rank of node in self
 		"""
-		return -1
+		cnt = node.left.size                      # initialize counter with the number of nodes in the left subtree
+		while node.is_real_node():                # climb up until the virtual root is reached
+			if node == node.parent.right:         # if node is a right child
+				cnt += node.parent.left.size + 1  # add the size of the left subtree and the parent
+			node = node.parent                    # climb up
+		return cnt
 
 	def select(self, i):
 		"""
@@ -346,7 +349,14 @@ class AVLTree(object):
 		@rtype: AVLNode
 		@returns: the node of rank i in self
 		"""
-		return None
+		node = self.get_root() 					# start from the root
+		while node.left.size + 1 != i: 			# continue until the rank of the root is i
+			if i < node.left.size + 1: 			# if the i'th smallest node is in the left subtree
+				node = node.left
+			else: 								# if the i'th smallest node is in the right subtree
+				i -= node.left.size + 1 		# update i
+				node = node.right 				# continue to the right subtree
+		return node 							# the while loop will end as 1 <= i <= self.size()
 
 	def max_range(self, a, b):
 		"""
@@ -399,6 +409,10 @@ class AVLTree(object):
 		A.height = max(A.left.height, A.right.height) + 1
 		B.height = max(B.left.height, B.right.height) + 1
 
+		## Size ##
+		A.size = A.left.size + A.right.size + 1
+		B.size = B.left.size + B.right.size
+
 	def rotate_right(self, node):
 		"""
 		Performs a right rotation.
@@ -429,6 +443,10 @@ class AVLTree(object):
 		### Height ###
 		A.height = max(A.left.height, A.right.height) + 1
 		B.height = max(B.left.height, B.right.height) + 1
+
+		## Size ##
+		A.size = A.left.size + A.right.size + 1
+		B.size = B.left.size + B.right.size
 
 	def rotate_left_right(self, node):
 		"""
@@ -483,25 +501,6 @@ class AVLTree(object):
 				self.rotate_left_right(node)          # left right rotation
 				return 2                              # Number of rotations performed is 2
 		return 0
-
-	def update_height(self, node):
-		"""
-		Travels up the path of the new inputted node, updates the height iteratively.
-		
-		@type node: AVLnode.
-		@param node: the new inputted node.
-		@rtype: int.
-		@returns: the number of height changes occured.
-		"""
-		cnt = 0
-		while node.is_real_node():
-			old_height = node.height
-			new_height = max(node.left.height, node.right.height) + 1 # Update the height and continue the climb
-			if old_height != new_height:
-				node.height = new_height
-				cnt += 1                  # count the number of height changes.
-			node = node.parent
-		return cnt
 
 	def successor(self, node):
 		"""
@@ -570,4 +569,3 @@ class AVLTree(object):
 		while node.is_real_node(): # iterate until a virtual leaf node is encountered
 			node = node.right
 		return node.parent         # return the virtual leaf node parent
-	
