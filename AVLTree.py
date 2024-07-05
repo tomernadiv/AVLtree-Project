@@ -124,8 +124,11 @@ class AVLTree(object):
 	Constructor, you are allowed to add more fields.  
 
 	"""
+##### Pracitcal Part Functions ######
+
 	def __init__(self):
 		self.virtual_root = VirtualRoot()
+		self.max_node = self.virtual_root  # initialize the maximum node to be the virtual root
 
 	def get_root(self):
 		"""
@@ -207,7 +210,7 @@ class AVLTree(object):
 
         # Travel up, for each node change the height and check if it's criminal.
 		# Count height change as +1, rotations as +1 or +2.
-		# If the hight didn't change, and current node is not a criminal - terminate.
+		# Stop when reaching the virtual root, as size maintenance is done there.
 
 		rebalances = 0 							   # initialize counter
 		curr_node = new_node.parent 			   # start from the new node
@@ -229,6 +232,10 @@ class AVLTree(object):
 		
 		# Update Virtual Root Size & Height:
 		self.virtual_root.size += 1
+
+		# Update the maximum node if needed:
+		if new_node.key > self.max_node.key:
+			self.max_node = new_node
 
 		return rebalances
 	
@@ -292,7 +299,13 @@ class AVLTree(object):
 
 		# Update Virtual Root Size & Height:
 		self.virtual_root.size -= 1
-
+		
+		# Update the maximum node if needed:
+		if node == self.max_node:
+			new_max = self.maximum()
+			self.max_node = new_max if new_max != None else self.virtual_root
+		
+		# Return the number of rebalances:
 		return rebalances	
 
 	def avl_to_array(self):
@@ -591,3 +604,82 @@ class AVLTree(object):
 		while node.is_real_node(): # iterate until a virtual leaf node is encountered
 			node = node.right
 		return node.parent         # return the virtual leaf node parent
+
+#### Theoretical Part Functions #####
+
+	def insert_from_max(self, key, val):
+		"""
+		Inserst a new node into the dictionary with corresponding key and value, using the finger-tree algorithm.
+		If needed, the maximum node is updated.
+
+		@type key: int.
+		@pre: key currently does not appear in the dictionary.
+		@param key: key of item that is to be inserted to self.
+		@type val: string.
+		@param val: the value of the item.
+
+		@rtype: tuple of integers.
+		@returns: a tuple with the sort_cost and substitutions --> (sort_cost, substitutions)
+				  sort_cost: the number of rebalancing operations due to AVL rebalancing + number of nodes visited when searching for the insertion point.
+				  substitutions: the number of pairs i>j where array[i] < array[j].
+		"""
+		# if the tree is empty:
+		if not self.virtual_root.right.is_real_node():
+			return self.insert(key, val), 1
+		
+		# Start from the maximum node
+		# iterate until we reach the right son of the first node that is smaller than the key
+		node = self.max_node
+		nodes_visited = 0
+		while node.parent.key > key:
+			nodes_visited += 1
+			node = node.parent
+		
+		# find the parent of the new node
+		while node.is_real_node():
+			if key < node.key:
+				node = node.left
+			else:
+				node = node.right
+			nodes_visited += 1
+		parent = node.parent        # new parent found
+								    # nodes_visited is ready to be returned
+
+		# insert the new node and fix pointers:
+		new_node = AVLNode(key, val)
+		new_node.parent = parent
+		if parent.left == node:
+			parent.left = new_node
+		else:
+			parent.right = new_node
+
+        # Travel up, for each node change the height and check if it's criminal.
+		# Count height change as +1, rotations as +1 or +2.
+		# Stop when reaching the virtual root, as size maintenance is done there.
+
+		rebalances = 0 							   # initialize counter
+		curr_node = new_node.parent 			   # start from the new node
+		while curr_node.is_real_node():            # continue until the virtual root is reached (or encounter break command)
+			next_node = curr_node.parent           # save the next node before changing it
+			# Update height:
+			old_height = curr_node.height          # save old height
+			new_height = max(curr_node.left.height, curr_node.right.height) + 1  # update height
+			curr_node.height = new_height		   # update height
+
+			# Decide the next move:
+			if curr_node.is_criminal():            # [OBS 1]
+				rebalances += self.balance(curr_node)
+			else: 
+				curr_node.size += 1                # update size
+				if new_height != old_height:       # [OBS 3]
+					rebalances += 1				   # count the number of height changes
+			curr_node = next_node		           # continue to the next node		
+		
+		# Update Virtual Root Size & Height:
+		self.virtual_root.size += 1
+
+		# Update the maximum node if needed:
+		if new_node.key > self.max_node.key:
+			self.max_node = new_node
+
+		return rebalances+nodes_visited, 0

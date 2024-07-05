@@ -537,7 +537,7 @@ class AVLTreeTester2022(unittest.TestCase):
         print(GRADE)
 
 if __name__ == '__main__':
-    unittest.main(verbosity = 0)
+    unittest.main(verbosity = 2)
     #Change verbosity = 0 or verbosity = 2 for less/more details from tests
 
     
