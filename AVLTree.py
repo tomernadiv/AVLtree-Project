@@ -625,7 +625,7 @@ class AVLTree(object):
 		"""
 		# if the tree is empty:
 		if not self.virtual_root.right.is_real_node():
-			return self.insert(key, val), 1
+			return self.insert(key, val), 0
 		
 		# Start from the maximum node
 		# iterate until we reach the right son of the first node that is smaller than the key
@@ -635,9 +635,13 @@ class AVLTree(object):
 			nodes_visited += 1
 			node = node.parent
 		
-		# find the parent of the new node
+		# initialize counter for the new node rank:
+		new_node_rank = self.size() + 1
+
+		# find the parent of the new node, update the new node's rank
 		while node.is_real_node():
 			if key < node.key:
+				new_node_rank -= (node.right.size + 1)
 				node = node.left
 			else:
 				node = node.right
@@ -682,4 +686,6 @@ class AVLTree(object):
 		if new_node.key > self.max_node.key:
 			self.max_node = new_node
 
-		return rebalances+nodes_visited, 0
+		sort_cost = rebalances + nodes_visited
+		substitutions = self.size() - new_node_rank
+		return sort_cost, substitutions
