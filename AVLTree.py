@@ -393,16 +393,25 @@ class AVLTree(object):
 		@rtype: AVLNode
 		@returns: the node with maximal (lexicographically) value having a<=key<=b, or None if no such keys exist
 		"""
-		# find the node with the smallest key greater than or equal to a:
+		# find the node with the smallest key greater than or equal to a
 		node = self.get_root()
-		while node.right.is_real_node() and node.right.key < a:
+		while node.is_real_node() and not node.key == a:
+			if node.key < a:
 				node = node.right
-		while node.left.is_real_node():
-			node = node.left		
+			else:
+				node = node.left
+
+		# if node is a virtual node:
+		if not node.is_real_node():
+			# check if node is a right son:
+			if node.parent.right == node:
+				node = self.successor(node.parent)
+			else:
+				node = node.parent
 		
-		# perform (b-a) successor calls:
+		# perform a maximum of (b-a) successor calls:
 		max_val_node = node
-		while node.is_real_node() and node.key < b:
+		while node.is_real_node() and node.key <= b:
 			if node.value >= max_val_node.value:
 				max_val_node = node
 			node = self.successor(node)
