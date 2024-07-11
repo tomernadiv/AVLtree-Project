@@ -1,10 +1,5 @@
-#username - tomernadiv
-#id1      - 322594227 
-#name1    - Tomer Nadiv
-#id2      - 207731381
-#name2    - Ron Ben Harosh  
-
-
+# Description: This file contains the implementation of an AVL tree data structure.
+# Tomer Nadiv & Ron Ben Harosh 2024
 
 """
 Virtual Leafs and Root objects Classes:
@@ -120,12 +115,6 @@ A class implementing an AVL tree.
 """
 class AVLTree(object):
 
-	"""
-	Constructor, you are allowed to add more fields.  
-
-	"""
-##### Pracitcal Part Functions ######
-
 	def __init__(self):
 		self.virtual_root = VirtualRoot()
 		self.max_node = self.virtual_root  # initialize the maximum node to be the virtual root
@@ -145,6 +134,7 @@ class AVLTree(object):
 		"""
 		searches for a node in the dictionary corresponding to the key.
 		Iterative approach for binary search.
+		Time Complexity: O(log(n)).
 
 		@type key: int
 		@param key: a key to be searched
@@ -174,6 +164,7 @@ class AVLTree(object):
 	def insert(self, key, val):
 		"""
 		inserts a new node into the dictionary with corresponding key and value
+		Time Complexity: O(log(n)).
 
 		@type key: int
 		@pre: key currently does not appear in the dictionary
@@ -242,6 +233,7 @@ class AVLTree(object):
 	def delete(self, node):
 		"""
 		deletes node from the dictionary
+		Time Complexity: O(log(n)).
 
 		@type node: AVLNode
 		@pre: node is a real pointer to a node in self
@@ -311,6 +303,7 @@ class AVLTree(object):
 	def avl_to_array(self):
 		"""
 		Returns an array representing the dictionary.
+		Time Complexity: O(n).
 
 		@rtype: list
 		@returns: a sorted list according to key of tuples (key, value) representing the data structure
@@ -348,6 +341,7 @@ class AVLTree(object):
 	def rank(self, node):
 		"""
 		compute the rank of node in the dictionary
+		Time Complexity: O(log(n)).
 
 		@type node: AVLNode
 		@pre: node is in self
@@ -365,6 +359,7 @@ class AVLTree(object):
 	def select(self, i):
 		"""
 		finds the i'th smallest item (according to keys) in the dictionary
+		Time Complexity: O(log(n)).
 
 		@type i: int
 		@pre: 1 <= i <= self.size()
@@ -384,6 +379,7 @@ class AVLTree(object):
 	def max_range(self, a, b):
 		"""
 		finds the node with the largest value in a specified range of keys
+		Time Complexity: O(n).
 
 		@type a: int
 		@param a: the lower end of the range
@@ -416,8 +412,6 @@ class AVLTree(object):
 				max_val_node = node
 			node = self.successor(node)
 		return max_val_node
-
-######### HELPER FUNCTIONS ##########
 
 	def rotate_left(self, node):
 		"""
@@ -572,6 +566,7 @@ class AVLTree(object):
 		"""
 		Return the minimum of a subtree. 
 		If node is None -> Return the minumum of the whole tree.
+		Time Complexity: O(log(n)).
 
 		@type node: AVLnode or None.
 		@param node: root of a subtree. if None, node -> real root.
@@ -595,6 +590,7 @@ class AVLTree(object):
 		"""
 		Return the maximum of a subtree. 
 		If node is None -> Return the maximum of the whole tree.
+		Time Complexity: O(log(n)).
 
 		@type node: AVLnode or None.
 		@param node: root of a subtree. if None, node -> real root.
@@ -614,12 +610,13 @@ class AVLTree(object):
 			node = node.right
 		return node.parent         # return the virtual leaf node parent
 
-#### Theoretical Part Functions #####
+#### Finger-tree modification functions #####
 
 	def insert_from_max(self, key, val):
 		"""
 		Inserst a new node into the dictionary with corresponding key and value, using the finger-tree algorithm.
 		If needed, the maximum node is updated.
+		Time Complexity: O(log(n)).
 
 		@type key: int.
 		@pre: key currently does not appear in the dictionary.

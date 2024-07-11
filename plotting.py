@@ -3,6 +3,13 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score
 from sklearn.linear_model import LinearRegression
 
+"""
+Plotting Function for Analyzing Experimental Results.
+Fit f(n) = n^2 and f(n) = n log2(n) to the experimental results, compare the R^2 values.
+Additional functions can be added for different transformations.
+"""
+
+
 def transform_square(v):
     return v ** 2
 
